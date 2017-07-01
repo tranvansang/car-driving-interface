@@ -3,8 +3,8 @@
 MainWindow::MainWindow(QWidget *parent, DrivingModel *drivingModel) :
     QMainWindow(parent),
     drivingModel(drivingModel),
-    setupWindow(new SetupWindow(this, drivingModel)),
-    drivingWindow(nullptr)
+    drivingWindow(nullptr),
+  setupWindow(new SetupWindow(this, drivingModel))
 {
     setFixedSize(500, 500);
     setCentralWidget(setupWindow);
@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent, DrivingModel *drivingModel) :
        drivingWindow = new DrivingWindow(this, this->drivingModel);
        setCentralWidget(drivingWindow);
        delete setupWindow;
+       setupWindow = nullptr;
     });
 }
 

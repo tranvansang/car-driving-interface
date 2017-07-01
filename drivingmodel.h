@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QPoint>
 #include <QSize>
+#include <QThread>
 
 #define NPARAM 4
 #define GEAR 0
@@ -17,22 +18,28 @@
 class DrivingModel : public QObject
 {
     Q_OBJECT
+    Q_ENUMS(Directions)
 public:
-    explicit DrivingModel(QObject *parent = nullptr);
+    enum Directions {Left = 0, Up, Right, Down, Stop};
+    explicit DrivingModel(QObject *parent = nullptr, QThread *thread = nullptr);
     void close();
-    void connectServer(QString, quint16);
+    void connectServer(QString const&, quint16);
     void start();
-    void updatePos(QPoint);
-    void driverInit(QPoint, QSize, QPoint, QSize);
+    void updatePos(QPoint const);
+    void driverInit(QPoint const&, QSize const&, QPoint const&, QSize const&);
     static const double UPDOWN_THRESHOLD;
+    qreal rotateAngle(QPoint const&);
+    qreal speedScale(QPoint const&);
+    QList<bool> shouldLightOn(QPoint const);
 
 
 signals:
     void socketConnected();
 
 public slots:
-    void updateParam();
 private:
+    bool shouldStop(QPoint const);
+    void updateParam();
     QTcpSocket socket;
     QPoint mouse;
     bool pendingStart;

@@ -5,18 +5,24 @@
 #define SPEED_THRESHOLD 20
 #define SPEED_LOW_RATE 0.5
 #define UI_REFRESH_RATE 0.01
+#define HANDLE_SCALE_MIN .5
+#define SPEED_LIGHT_THRESHOLD 0
+#define WHEEL_LIGHT_THRESHOLD 1
 
-DrivingModel::DrivingModel(QObject *parent) :
+DrivingModel::DrivingModel(QObject *parent, QThread *thread) :
     QObject(parent),
     pendingStart(false),
     currentParam(0),
     lock(),
-    timer(new QTimer(this)),
     uiLock(),
     firstMove(true)
 {
-    connect(&socket, &QAbstractSocket::connected, this, &DrivingModel::socketConnected);
-    connect(&socket, &QAbstractSocket::disconnected, [](){
+    if (thread) moveToThread(thread);
+    connect(&socket, &QAbstractSocket::connected, [=]{
+       qInfo() <<"connected";
+       socketConnected();
+    });
+    connect(&socket, &QAbstractSocket::disconnected, [=](){
         qInfo() << "Disconnected";
     });
     connect(&socket, static_cast<void ( QTcpSocket::* )( QAbstractSocket::SocketError )>(&QAbstractSocket::error), [this](QAbstractSocket::SocketError){
@@ -25,6 +31,8 @@ DrivingModel::DrivingModel(QObject *parent) :
     for (int i = 0; i < NPARAM; i++)
         params[i][0] = params[i][1] = 0;
     params[WHEEL][0] = params[WHEEL][1] = 50;
+
+    timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &DrivingModel::updateParam);
     timer->start(static_cast<int>(MILISEC_PER_SEC * UPDATE_RATE));
 }
@@ -32,23 +40,57 @@ DrivingModel::DrivingModel(QObject *parent) :
 const double DrivingModel::UPDOWN_THRESHOLD = 0.4;
 
 void DrivingModel::close(){
+    timer->stop();
+    delete timer;
     socket.close();
 }
 
-void DrivingModel::connectServer(QString host, quint16 port){
+void DrivingModel::connectServer(QString const& host, quint16 port){
     socket.connectToHost(host, port, QIODevice::WriteOnly);
     qInfo() << "socket: connect to " << host <<  " port " << port;
     //socket->connectToHost("192.168.3.14", 5800, QIODevice::WriteOnly);
 }
 
-void DrivingModel::driverInit(QPoint newMouse, QSize winSize, QPoint stopPos, QSize stopSize){
+void DrivingModel::driverInit(QPoint const& newMouse, QSize const& winSize, QPoint const& stopPos, QSize const& stopSize){
     mouse = newMouse;
     this->winSize = winSize;
     this->stopPos = stopPos;
     this->stopSize = stopSize;
 }
 
-void DrivingModel::updatePos(QPoint pos){
+bool DrivingModel::shouldStop(QPoint const pos){
+    return pos.x() > stopPos.x() && pos.x() < stopPos.x() + stopSize.width() &&
+                pos.y() > stopPos.y() && pos.y() < stopPos.y() + stopSize.height();
+}
+
+QList<bool> DrivingModel::shouldLightOn(QPoint const pos){
+    if (shouldStop(pos)){
+        Q_ASSERT(Stop == 4);
+        return QList<bool>({false, false, false, false, true});
+    }
+    bool should[5];
+    //left -> up -> right -> down
+    int threshold = static_cast<int>((1 - UPDOWN_THRESHOLD) * winSize.height());
+    if (pos.y() > threshold){//decelerate
+        should[Up] = false;
+        should[Down] = evalSpeed(pos.y() - threshold, winSize.height() - threshold) > SPEED_LIGHT_THRESHOLD;
+    }else { //accelerate
+        should[Down] = false;
+        should[Up] = evalSpeed(threshold - pos.y(), threshold) > SPEED_LIGHT_THRESHOLD;
+    }
+    int wheelOffset = evalWheel(abs(winSize.width() / 2 - pos.x()), winSize.width() / 2);
+    if (pos.x() > winSize.width() / 2){//turn right
+        should[Left] = false;
+        should[Right] = wheelOffset > WHEEL_LIGHT_THRESHOLD;
+    }else {
+        should[Right] = false;
+        should[Left] = wheelOffset > WHEEL_LIGHT_THRESHOLD;
+    }
+    should[Stop] = false;
+    return QList<bool>::fromStdList(std::list<bool>(should, should + 5));
+}
+
+void DrivingModel::updatePos(QPoint const pos){
     if (mouse == pos)
         return;
     if (!uiLock.tryLock()){
@@ -58,8 +100,8 @@ void DrivingModel::updatePos(QPoint pos){
         firstMove = false;
         pendingStart = true;
     }
-    if (mouse.x() > stopPos.x() && mouse.x() < stopPos.x() + stopSize.width() &&
-            mouse.y() > stopPos.y() && mouse.y() < stopPos.y() + stopSize.height()){
+    mouse = pos;
+    if (shouldStop(mouse)){
         //stop
         params[ACCELERATOR][0] = 0;
         params[DECELERATOR][0] = 100;
@@ -99,6 +141,22 @@ int DrivingModel::evalWheel(int offset, int maxVal){
     return static_cast<int>(SPEED_THRESHOLD * SPEED_LOW_RATE + (scaled - SPEED_THRESHOLD) * (50 - SPEED_THRESHOLD * SPEED_LOW_RATE) / (50 - SPEED_THRESHOLD));
 }
 
+qreal DrivingModel::rotateAngle(QPoint const& pos){
+    int wheelOffset = evalWheel(abs(winSize.width() / 2 - pos.x()), winSize.width() / 2);
+    return (pos.x() > winSize.width() / 2 ? 1. : -1.) * 90. * wheelOffset / 50;
+}
+
+qreal DrivingModel::speedScale(QPoint const& pos){
+    int threshold = static_cast<int>((1 - UPDOWN_THRESHOLD) * winSize.height());
+    qreal t;
+    if (pos.y() > threshold){//decelerate
+        t = (100. - evalSpeed(pos.y() - threshold, winSize.height() - threshold)) / 100.;
+    }else { //accelerate
+        t = (100. - evalSpeed(threshold - pos.y(), threshold)) / 100.;
+    }
+    return HANDLE_SCALE_MIN + (1. - HANDLE_SCALE_MIN) * t;
+}
+
 void DrivingModel::updateParam(){
     if (!lock.tryLock()){
         return;
@@ -107,7 +165,7 @@ void DrivingModel::updateParam(){
         pendingStart = false;
         socket.write("start\n");
         socket.flush();
-        qInfo() << "start";
+        qInfo() << "start\n";
         params[GEAR][0] = params[ACCELERATOR][0] = params[DECELERATOR][0] = 0;
         params[WHEEL][0] = 50;
     }else {
@@ -119,21 +177,21 @@ void DrivingModel::updateParam(){
                 QString str("Wrong thing happened");
                 switch (i){
                 case GEAR:
-                    str = QString(params[i][0] ? "shiftgear true" : "shiftgear false");
+                    str = QString(params[i][0] ? "shiftgear true\n" : "shiftgear false\n");
                     break;
                 case ACCELERATOR:
-                    str = QString("accelerator %1").arg(QString::number(params[i][0]));
+                    str = QString("accelerator %1\n").arg(QString::number(params[i][0]));
                     break;
                 case DECELERATOR:
-                    str = QString("decelerator %1").arg(QString::number(params[i][0]));
+                    str = QString("decelerator %1\n").arg(QString::number(params[i][0]));
                     break;
                 case WHEEL:
-                    str = QString("wheel %1").arg(QString::number(params[i][0]));
+                    str = QString("wheel %1\n").arg(QString::number(params[i][0]));
                     break;
                 }
                 socket.write(str.toUtf8());
                 socket.flush();
-                qInfo() << str;
+                qInfo() << str.toUtf8();
                 break;
             }
         }

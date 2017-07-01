@@ -2,7 +2,11 @@
 #define DRIVINGWINDOW_H
 
 #include <QWidget>
+#include <QLabel>
+#include <QGraphicsDropShadowEffect>
 #include "drivingmodel.h"
+#include <QGraphicsOpacityEffect>
+#include <QPainter>
 
 namespace Ui {
 class DrivingWindow;
@@ -24,7 +28,11 @@ private:
     Ui::DrivingWindow *ui;
     void mouseMoveEvent(QMouseEvent *event);
     DrivingModel *drivingModel;
-
+    QImage handleImg;
+    QSize handleSize;
+    QGraphicsOpacityEffect opacityEffects[5];
+    QList<QLabel*> labels;
+    QPainter painter;
 };
 
 #endif // DRIVINGWINDOW_H
