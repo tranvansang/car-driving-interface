@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/labels">
+        <file>resources/labels/down.png</file>
+        <file>resources/labels/left.png</file>
+        <file>resources/labels/right.png</file>
+        <file>resources/labels/stop.png</file>
+        <file>resources/labels/up.png</file>
+        <file>resources/labels/wheel.png</file>
+    </qresource>
+    <qresource prefix="/"/>
+</RCC>
