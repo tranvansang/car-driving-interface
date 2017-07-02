@@ -15,7 +15,7 @@ class DrivingWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit DrivingWindow(QWidget *parent = nullptr, DrivingModel *drivingModel = nullptr);
+    explicit DrivingWindow(DrivingModel &drivingModel, QWidget *parent = nullptr);
     ~DrivingWindow();
 
 signals:
@@ -27,7 +27,7 @@ private slots:
 private:
     Ui::DrivingWindow *ui;
     void mouseMoveEvent(QMouseEvent *event);
-    DrivingModel *drivingModel;
+    DrivingModel &drivingModel;
     QImage handleImg;
     QSize handleSize;
     QGraphicsOpacityEffect opacityEffects[5];

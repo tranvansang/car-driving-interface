@@ -1,7 +1,7 @@
 #include "setupwindow.h"
 #include "ui_setupwindow.h"
 
-SetupWindow::SetupWindow(QWidget *parent, DrivingModel *drivingModel) :
+SetupWindow::SetupWindow(DrivingModel & drivingModel, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::SetupWindow),
     drivingModel(drivingModel)
@@ -17,5 +17,5 @@ void SetupWindow::on_okButton_clicked()
 {
     QString host = ui->hostText->text();
     QString port = ui->portText->text();
-    drivingModel->connectServer(host, qint16(port.toInt()));
+    drivingModel.connectServer(host, quint16(port.toInt()));
 }

@@ -12,7 +12,7 @@ class SetupWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit SetupWindow(QWidget *parent = nullptr, DrivingModel *drivingModel = nullptr);
+    explicit SetupWindow(DrivingModel & drivingModel, QWidget *parent = nullptr);
     ~SetupWindow();
 
 signals:
@@ -23,7 +23,7 @@ private slots:
 
 private:
     Ui::SetupWindow *ui;
-    DrivingModel *drivingModel;
+    DrivingModel & drivingModel;
 };
 
 #endif // SETUPWINDOW_H

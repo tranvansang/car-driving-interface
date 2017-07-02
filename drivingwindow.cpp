@@ -7,7 +7,7 @@
 
 #define DEACTIVE_OPACITY
 
-DrivingWindow::DrivingWindow(QWidget *parent, DrivingModel *drivingModel) :
+DrivingWindow::DrivingWindow(DrivingModel &drivingModel, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::DrivingWindow),
     drivingModel(drivingModel),
@@ -16,7 +16,7 @@ DrivingWindow::DrivingWindow(QWidget *parent, DrivingModel *drivingModel) :
 {
     ui->setupUi(this);
     ui->stopLabel->move((width() - ui->stopLabel->width()) / 2, static_cast<int>(height() - height() * DrivingModel::UPDOWN_THRESHOLD) - ui->stopLabel->height() / 2);
-    drivingModel->driverInit(QPoint((width() - ui->handleLabel->width()) / 2, static_cast<int>(height() - height() * DrivingModel::UPDOWN_THRESHOLD - ui->handleLabel->height() / 2)),
+    drivingModel.driverInit(QPoint((width() - ui->handleLabel->width()) / 2, static_cast<int>(height() - height() * DrivingModel::UPDOWN_THRESHOLD - ui->handleLabel->height() / 2)),
                              size(), ui->stopLabel->pos(), ui->stopLabel->size());
     labels = QList<QLabel*>({ui->leftLabel, ui->upLabel, ui->rightLabel, ui->downLabel, ui->stopLabel});
     Q_ASSERT(DrivingModel::Left == 0);
@@ -38,18 +38,18 @@ DrivingWindow::~DrivingWindow(){
 
 void DrivingWindow::on_startButton_clicked()
 {
-    drivingModel->start();
+    drivingModel.start();
 }
 
 void DrivingWindow::mouseMoveEvent(QMouseEvent *event){
     ui->handleLabel->move(event->pos().x() - ui->handleLabel->width() / 2, event->pos().y() - ui->handleLabel->height() / 2);
-    drivingModel->updatePos(event->pos());
-    qreal angle = drivingModel->rotateAngle(event->pos());
+    drivingModel.updatePos(event->pos());
+    qreal angle = drivingModel.rotateAngle(event->pos());
     QPoint center = handleImg.rect().center();
     ui->handleLabel->setPixmap(QPixmap::fromImage(handleImg.transformed(QMatrix().translate(center.x(), center.y()).rotate(angle))));
-    ui->handleLabel->resize(handleSize * drivingModel->speedScale(event->pos()));
+    ui->handleLabel->resize(handleSize * drivingModel.speedScale(event->pos()));
 
-    QList<bool> shouldLightOn = drivingModel->shouldLightOn(event->pos());
+    QList<bool> shouldLightOn = drivingModel.shouldLightOn(event->pos());
     for (int i = 0; i < 5; i++){
         if (shouldLightOn[i])
             opacityEffects[i].setOpacity(1);

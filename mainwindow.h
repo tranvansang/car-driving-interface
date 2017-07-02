@@ -11,11 +11,11 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0, DrivingModel *model = nullptr);
+    explicit MainWindow(DrivingModel &model, QWidget *parent = 0);
     ~MainWindow();
 
 private:
-    DrivingModel *drivingModel;
+    DrivingModel &drivingModel;
     DrivingWindow *drivingWindow;
     SetupWindow *setupWindow;
 };
