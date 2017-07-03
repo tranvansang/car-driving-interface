@@ -4,7 +4,7 @@ For school exercise.
 
 Written in C++ using Qt
 
-Topic: there is Unity car driving server, served via socket connection via following command
+Topic: there is Unity car driving server, served via socket connection via following commands
 
 - start	// 初期状態に戻す 計測開始 
 - accelerator 50 // アクセルレベルの設定 (0 ... 100)　更新されるまで同じレベルを維持する。 
