@@ -22,11 +22,11 @@ Screenshots
 
 Server
 
-![alt text](https://raw.githubusercontent.com/tranvansang/car-driving-interface/master/screenshots/server.png)
+![alt text](screenshots/server.png)
 
 
 Driving interface
 
-![alt text](https://raw.githubusercontent.com/tranvansang/car-driving-interface/master/screenshots/interface1.png)
+![alt text](screenshots/interface1.png)
 
-![alt text](https://raw.githubusercontent.com/tranvansang/car-driving-interface/master/screenshots/interface2.png)
+![alt text](screenshots/interface2.png)
