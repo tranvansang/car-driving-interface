@@ -1,13 +1,29 @@
 #include "drivingmodel.h"
 
+//socket update rate in seconds
 #define UPDATE_RATE 0.3
 #define MILISEC_PER_SEC 1000
-#define SPEED_THRESHOLD 20
-#define SPEED_LOW_RATE 0.5
+
+// ui refresh rate
 #define UI_REFRESH_RATE 0.01
-#define HANDLE_SCALE_MIN .5
+
+//minimum speed scale to control wheel scale rate
+#define WHEE_SCALE_MIN .5
+
+// should turn traffic sign on when speed passes this threshold
 #define SPEED_LIGHT_THRESHOLD 0
+// same as SPEED_LIGHT_THRESHOLD
 #define WHEEL_LIGHT_THRESHOLD 1
+
+// when wheel lower than this value, eval wheel value based on WHEEL_LOW_RATE
+#define WHEEL_THRESHOLD 20
+#define WHEEL_LOW_RATE 0.5
+
+// to prevent user from move mouse to edge of screen, when mouse offset pass this threshold
+// set wheel value to be WHEEL_THRESHOLD_UP_VAL
+#define WHEEL_THRESHOLD_UP 45
+#define WHEEL_THRESHOLD_UP_VAL 20
+
 
 DrivingModel::DrivingModel(QObject *parent, QThread *thread) :
     QObject(parent),
@@ -37,6 +53,7 @@ DrivingModel::DrivingModel(QObject *parent, QThread *thread) :
     timer->start(static_cast<int>(MILISEC_PER_SEC * UPDATE_RATE));
 }
 
+//accelerator vs decelerator area ratio
 const double DrivingModel::UPDOWN_THRESHOLD = 0.4;
 
 void DrivingModel::close(){
@@ -70,7 +87,7 @@ QList<bool> DrivingModel::shouldLightOn(QPoint const pos){
     }
     bool should[5];
     //left -> up -> right -> down
-    int threshold = static_cast<int>((1 - UPDOWN_THRESHOLD) * winSize.height());
+    int threshold = static_cast<int>((1. - UPDOWN_THRESHOLD) * winSize.height());
     if (pos.y() > threshold){//decelerate
         should[Up] = false;
         should[Down] = evalSpeed(pos.y() - threshold, winSize.height() - threshold) > SPEED_LIGHT_THRESHOLD;
@@ -108,7 +125,7 @@ void DrivingModel::updatePos(QPoint const pos){
         params[GEAR][0] = 0;
         params[WHEEL][0] = 50;
     }else{
-        int threshold = static_cast<int>((1 - UPDOWN_THRESHOLD) * winSize.height());
+        int threshold = static_cast<int>((1. - UPDOWN_THRESHOLD) * winSize.height());
         if (mouse.y() > threshold){//decelerate
             params[ACCELERATOR][0] = evalSpeed(mouse.y() - threshold, winSize.height() - threshold);
             params[GEAR][0] = 1;
@@ -136,9 +153,11 @@ int DrivingModel::evalSpeed(int offset, int maxVal){
 //return from 0->50
 int DrivingModel::evalWheel(int offset, int maxVal){
     int scaled = offset * 50 / maxVal;
-    if (scaled < SPEED_THRESHOLD)
-        return static_cast<int>(scaled * SPEED_LOW_RATE);
-    return static_cast<int>(SPEED_THRESHOLD * SPEED_LOW_RATE + (scaled - SPEED_THRESHOLD) * (50 - SPEED_THRESHOLD * SPEED_LOW_RATE) / (50 - SPEED_THRESHOLD));
+    if (scaled >= WHEEL_THRESHOLD_UP)
+        return WHEEL_THRESHOLD_UP_VAL;
+    if (scaled < WHEEL_THRESHOLD)
+        return static_cast<int>(scaled * WHEEL_LOW_RATE);
+    return static_cast<int>(WHEEL_THRESHOLD * WHEEL_LOW_RATE + (scaled - WHEEL_THRESHOLD) * (50 - WHEEL_THRESHOLD * WHEEL_LOW_RATE) / (50 - WHEEL_THRESHOLD));
 }
 
 qreal DrivingModel::rotateAngle(QPoint const& pos){
@@ -146,15 +165,16 @@ qreal DrivingModel::rotateAngle(QPoint const& pos){
     return (pos.x() > winSize.width() / 2 ? 1. : -1.) * 90. * wheelOffset / 50;
 }
 
-qreal DrivingModel::speedScale(QPoint const& pos){
-    int threshold = static_cast<int>((1 - UPDOWN_THRESHOLD) * winSize.height());
+//calculate wheel scale based on speed
+qreal DrivingModel::wheelScale(QPoint const& pos){
+    int threshold = static_cast<int>((1. - UPDOWN_THRESHOLD) * winSize.height());
     qreal t;
     if (pos.y() > threshold){//decelerate
         t = (100. - evalSpeed(pos.y() - threshold, winSize.height() - threshold)) / 100.;
     }else { //accelerate
         t = (100. - evalSpeed(threshold - pos.y(), threshold)) / 100.;
     }
-    return HANDLE_SCALE_MIN + (1. - HANDLE_SCALE_MIN) * t;
+    return WHEE_SCALE_MIN + (1. - WHEE_SCALE_MIN) * t;
 }
 
 void DrivingModel::updateParam(){
@@ -177,7 +197,7 @@ void DrivingModel::updateParam(){
                 QString str("Wrong thing happened");
                 switch (i){
                 case GEAR:
-                    str = QString(params[i][0] ? "shiftgear true\n" : "shiftgear false\n");
+                    str = QString(params[i][0] ? "shiftgear -1\n" : "shiftgear 1\n");
                     break;
                 case ACCELERATOR:
                     str = QString("accelerator %1\n").arg(QString::number(params[i][0]));
