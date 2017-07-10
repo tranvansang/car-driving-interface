@@ -66,7 +66,7 @@ DrivingModel::~DrivingModel(){
     connect(timer, &QTimer::timeout, [this]{
         timer->stop();
         QThread &thread = *timer->thread();
-        delete timer;
+        timer->deleteLater();
         thread.quit();
     });
     socket.close();

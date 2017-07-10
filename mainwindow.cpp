@@ -12,13 +12,13 @@ MainWindow::MainWindow(DrivingModel &drivingModel, QWidget *parent) :
     connect(&drivingModel, &DrivingModel::socketConnected, [this](){
        drivingWindow = new DrivingWindow(this->drivingModel, this);
        setCentralWidget(drivingWindow);
-       delete setupWindow;
+       setupWindow->deleteLater();
        setupWindow = nullptr;
     });
 }
 
 MainWindow::~MainWindow()
 {
-    if (setupWindow) delete setupWindow;
+    if (setupWindow) setupWindow->deleteLater();
     if (drivingWindow) delete drivingWindow;
 }
