@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     QThread modelThread;
-    DrivingModel model(&a, &modelThread);
+    DrivingModel model(modelThread, &a);
     MainWindow w(model);
     w.show();
 

@@ -21,8 +21,7 @@ class DrivingModel : public QObject
     Q_ENUMS(Directions)
 public:
     enum Directions {Left = 0, Up, Right, Down, Stop};
-    explicit DrivingModel(QObject *parent = nullptr, QThread *thread = nullptr);
-    void close();
+    explicit DrivingModel(QThread & thread, QObject *parent = nullptr);
     void connectServer(QString const&, quint16);
     void start();
     void updatePos(QPoint const);
@@ -31,6 +30,7 @@ public:
     qreal rotateAngle(QPoint const&);
     qreal wheelScale(QPoint const&);
     QList<bool> shouldLightOn(QPoint const);
+    ~DrivingModel();
 
 
 signals:
@@ -46,13 +46,13 @@ private:
     int params[NPARAM][2];
     int currentParam;
     QMutex lock;
-    QTimer *timer;
     QMutex uiLock;
     static int evalSpeed(int, int);
     static int evalWheel(int, int);
     QSize winSize, stopSize;
     QPoint stopPos;
     bool firstMove;
+    QTimer *timer;
 };
 
 #endif // DRIVINGMODEL_H

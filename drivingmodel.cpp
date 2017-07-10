@@ -25,15 +25,15 @@
 #define WHEEL_THRESHOLD_UP_VAL 20
 
 
-DrivingModel::DrivingModel(QObject *parent, QThread *thread) :
+DrivingModel::DrivingModel(QThread & thread, QObject *parent) :
     QObject(parent),
     pendingStart(false),
     currentParam(0),
     lock(),
     uiLock(),
-    firstMove(true)
+    firstMove(true),
+    timer(new QTimer(0))
 {
-    if (thread) moveToThread(thread);
     connect(&socket, &QAbstractSocket::connected, [=]{
        qInfo() <<"connected";
        socketConnected();
@@ -48,18 +48,29 @@ DrivingModel::DrivingModel(QObject *parent, QThread *thread) :
         params[i][0] = params[i][1] = 0;
     params[WHEEL][0] = params[WHEEL][1] = 50;
 
-    timer = new QTimer(this);
+    timer->moveToThread(&thread);
     connect(timer, &QTimer::timeout, this, &DrivingModel::updateParam);
-    timer->start(static_cast<int>(MILISEC_PER_SEC * UPDATE_RATE));
+    connect(&thread, &QThread::started, [this](){
+        timer->start(static_cast<int>(MILISEC_PER_SEC * UPDATE_RATE));
+    });
+
+    thread.start();
 }
 
 //accelerator vs decelerator area ratio
 const double DrivingModel::UPDOWN_THRESHOLD = 0.4;
 
-void DrivingModel::close(){
-    timer->stop();
-    delete timer;
+
+DrivingModel::~DrivingModel(){
+    QThread &thread = *timer->thread();
+    connect(timer, &QTimer::timeout, [this]{
+        timer->stop();
+        QThread &thread = *timer->thread();
+        delete timer;
+        thread.quit();
+    });
     socket.close();
+    thread.wait();
 }
 
 void DrivingModel::connectServer(QString const& host, quint16 port){

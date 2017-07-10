@@ -3,7 +3,6 @@
 #include <QMouseEvent>
 #include <QtMath>
 #include <QLinearGradient>
-#include <QPainter>
 
 #define DEACTIVE_OPACITY
 
@@ -11,8 +10,7 @@ DrivingWindow::DrivingWindow(DrivingModel &drivingModel, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::DrivingWindow),
     drivingModel(drivingModel),
-    handleImg(":/labels/resources/labels/wheel.png"),
-    painter(this)
+    handleImg(":/labels/resources/labels/wheel.png")
 {
     ui->setupUi(this);
     ui->stopLabel->move((width() - ui->stopLabel->width()) / 2, static_cast<int>(height() - height() * DrivingModel::UPDOWN_THRESHOLD) - ui->stopLabel->height() / 2);
@@ -58,14 +56,7 @@ void DrivingWindow::mouseMoveEvent(QMouseEvent *event){
     }
     if (shouldLightOn[DrivingModel::Stop]){
         ui->handleLabel->hide();
-//        painter.eraseRect(rect());
     }else{
         ui->handleLabel->show();
-//        QLinearGradient gradient(rect().topLeft(), rect().bottomRight());
-//        gradient.setColorAt(0, Qt::green);
-//        gradient.setColorAt(1, Qt::red);
-//        QPen pen(QBrush(gradient), width());
-//        painter.setPen(pen);
-//        painter.draw
     }
 }
