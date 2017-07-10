@@ -29,7 +29,7 @@ public:
     void driverInit(QPoint const&, QSize const&, QPoint const&, QSize const&);
     static const double UPDOWN_THRESHOLD;
     qreal rotateAngle(QPoint const&);
-    qreal speedScale(QPoint const&);
+    qreal wheelScale(QPoint const&);
     QList<bool> shouldLightOn(QPoint const);
 
 
