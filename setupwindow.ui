@@ -72,7 +72,7 @@
     <item>
      <widget class="QLineEdit" name="hostText">
       <property name="text">
-       <string>192.168.3.14</string>
+       <string>localhost</string>
       </property>
      </widget>
     </item>
