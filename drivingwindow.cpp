@@ -47,7 +47,7 @@ void DrivingWindow::mouseMoveEvent(QMouseEvent *event){
     qreal angle = drivingModel.rotateAngle(event->pos());
     QPoint center = handleImg.rect().center();
     ui->handleLabel->setPixmap(QPixmap::fromImage(handleImg.transformed(QMatrix().translate(center.x(), center.y()).rotate(angle))));
-    ui->handleLabel->resize(handleSize * drivingModel.speedScale(event->pos()));
+    ui->handleLabel->resize(handleSize * drivingModel.wheelScale(event->pos()));
 
     QList<bool> shouldLightOn = drivingModel.shouldLightOn(event->pos());
     for (int i = 0; i < 5; i++){
